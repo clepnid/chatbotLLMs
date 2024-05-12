@@ -52,7 +52,7 @@ class CFG:
     k = 6
     
     # paths
-    PDFs_path = '/kaggle/input/harry-potter-books-in-pdf-1-7/HP books/'
+    PDFs_path = './harry_potter/'
     Embeddings_path =  '/kaggle/input/faiss-hp-sentence-transformers'
     Output_folder = './harry-potter-vectordb'
 
