@@ -5,8 +5,10 @@ import os
 import glob
 import textwrap
 import time
-
+import pickle
 import langchain
+
+from transformers import T5ForConditionalGeneration
 
 ### loaders
 from langchain.document_loaders import PyPDFLoader, DirectoryLoader
@@ -28,6 +30,8 @@ from langchain.chains import RetrievalQA
 
 import torch
 import transformers
+import concurrent.futures
+
 from transformers import (
     AutoTokenizer, AutoModelForCausalLM,
     BitsAndBytesConfig,
@@ -52,10 +56,10 @@ class CFG:
     k = 6
     
     # paths
-    PDFs_path = '.\\books\\'
-    Embeddings_path =  '.\\input\\faiss-hp-sentence-transformers'
-    Output_folder = '.\\books-vectordb'
-    Output_folder_faiss = '.\\books-vectordb\\faiss_index_hp'
+    PDFs_path = './books/'
+    Embeddings_path =  './input/faiss-hp-sentence-transformers'
+    Output_folder = './books-vectordb'
+    Output_folder_faiss = './books-vectordb/faiss_index_hp'
 
     
 
@@ -195,102 +199,119 @@ def llm_ans(query, qa_chain):
     return ans + time_elapsed_str
 
 
-def main():
-    pdf_files = sorted(glob.glob(CFG.PDFs_path))
 
+def verify_cuda():
+    #"""Verifica si CUDA esta disponible y habilitado."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+    torch.cuda.set_device(0)  # Selecciona la GPU 0 (cambia según tu configuración)
+    torch.backends.cudnn.benchmark = True  # Mejora el rendimiento para entradas de tamaño fijo
+    # Si CUDA está disponible, mueve el modelo y los tensores a la GPU
+    return device
+
+def list_pdf_files(pdf_path):
+    #"""Lista los archivos PDF en la ruta especificada."""
+    pdf_files = sorted(glob.glob(pdf_path))
     print('List of books in PDF:')
     for pdf_file in pdf_files:
         print(os.path.basename(pdf_file))
 
-    tokenizer, model, max_len = get_model(model = CFG.model_name)
-
-    # Save model to the specified folder
+def load_model_and_tokenizer(model_name):
+    """Carga el modelo y el tokenizer."""
     output_folder = './model'
     os.makedirs(output_folder, exist_ok=True)
-    model.save_pretrained(output_folder)
 
-    print('Model downloaded and saved to:', output_folder)
-    
+    # Verificar si el modelo ya está descargado
+    model_path = os.path.join(output_folder, 'FinalMode')
+    if os.path.exists(model_path):
+        print('Model already downloaded.')
+        model = T5ForConditionalGeneration.from_pretrained(model_path)
+        tokenizer = AutoTokenizer.from_pretrained('daryl149/llama-2-13b-chat-hf')
+        max_len = 2048
+    else:
+        tokenizer, model, max_len = get_model(model=model_name)
+        model.save_pretrained(model_path,  from_pt=True)
+        print('Model downloaded and saved to:', output_folder)
     model.eval()
+    return tokenizer, model, max_len
 
-    model.hf_device_map
 
+def setup_pipeline(tokenizer, model, max_len):
+    #"""Configura el pipeline de Hugging Face."""
     pipe = pipeline(
-    task = "text-generation",
-    model = model,
-    tokenizer = tokenizer,
-    pad_token_id = tokenizer.eos_token_id,
-    #        do_sample = True,
-    max_length = max_len,
-    temperature = CFG.temperature,
-    top_p = CFG.top_p,
-    repetition_penalty = CFG.repetition_penalty
+        task="text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        pad_token_id=tokenizer.eos_token_id,
+        max_length=max_len,
+        temperature=CFG.temperature,
+        top_p=CFG.top_p,
+        repetition_penalty=CFG.repetition_penalty
     )
+    return HuggingFacePipeline(pipeline=pipe)
 
-    ### langchain pipeline
-    llm = HuggingFacePipeline(pipeline = pipe)
-    llm
-    query = "Give me 5 examples of shards"
-    llm.invoke(query)
-    CFG.model_name
-    
 
+def load_or_create_documents(pdf_path, cache_path):
+    # Verificar si existe el archivo de caché
+    if os.path.exists(cache_path):
+        print("Cargando documentos desde cache...")
+        with open(cache_path, 'rb') as file:
+            documents = pickle.load(file)
+    else:
+        print("Cargando documentos desde PDFs...")
+        documents = load_documents(pdf_path)
+        # Guardar documentos en caché
+        with open(cache_path, 'wb') as file:
+            pickle.dump(documents, file)
+    return documents
+
+def load_documents(pdf_path):
+     #"""Carga los documentos PDF."""
     loader = DirectoryLoader(
-    CFG.PDFs_path,
-    glob="./*.pdf",
-    loader_cls=PyPDFLoader,
-    show_progress=True,
-    use_multithreading=True
+        pdf_path,
+        glob="./*.pdf",
+        loader_cls=PyPDFLoader,
+        show_progress=True,
+        use_multithreading=True
     )
-    documents = loader.load()
-    
+    return loader.load()
 
+def split_texts(documents):
+    #"""Divide los documentos en fragmentos."""
     text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size = CFG.split_chunk_size,
-    chunk_overlap = CFG.split_overlap
+        chunk_size=CFG.split_chunk_size,
+        chunk_overlap=CFG.split_overlap
     )
+    return text_splitter.split_documents(documents)
 
-    texts = text_splitter.split_documents(documents)
-
-    print(f'We have created {len(texts)} chunks from {len(documents)} pages')
-
-    ### we create the embeddings only if they do not exist yet
-    if not os.path.exists(CFG.Output_folder_faiss + '\\index.faiss'):
-
-        ### download embeddings model
+def download_and_create_embeddings(texts):
+    #"""Descarga e crea los embeddings si no existen."""
+    if not os.path.exists(CFG.Output_folder_faiss + '/index.faiss'):
         embeddings = HuggingFaceInstructEmbeddings(
-            model_name = CFG.embeddings_model_repo,
-            model_kwargs = {"device": "cuda"}
+            model_name=CFG.embeddings_model_repo,
+            model_kwargs={"device": "cuda"}
         )
-        
-
-        ### create embeddings and DB
         vectordb = FAISS.from_documents(
-            documents = texts,
-            embedding = embeddings
+            documents=texts,
+            embedding=embeddings
         )
+        vectordb.save_local(CFG.Output_folder_faiss)
+        return vectordb
 
-        ### persist vector database
-        vectordb.save_local(CFG.Output_folder_faiss) # save in output folder
-        #     vectordb.save_local(f"{CFG.Embeddings_path}/faiss_index_hp") # save in input folder
-        
-    ### download embeddings model
+def load_embeddings():
+    #"""Carga los embeddings."""
     embeddings = HuggingFaceInstructEmbeddings(
-        model_name = CFG.embeddings_model_repo,
-        model_kwargs = {"device": "cuda"}
+        model_name=CFG.embeddings_model_repo,
+        model_kwargs={"device": "cuda"}
     )
-        
-
-    ### load vector DB embeddings
-    vectordb = FAISS.load_local(
-        #CFG.Embeddings_path, # from input folder
-            CFG.Output_folder_faiss, # from output folder
+    return FAISS.load_local(
+        CFG.Output_folder_faiss,
         embeddings,
         allow_dangerous_deserialization=True
     )
 
-    vectordb.similarity_search('magic creatures')
-
+def configure_prompt_template():
+    #"""Configura el template del prompt."""
     prompt_template = """
     Don't try to make up an answer, if you don't know just say that you don't know.
     Answer in the same language the question was asked.
@@ -300,12 +321,21 @@ def main():
 
     Question: {question}
     Answer:"""
+    return PromptTemplate(template=prompt_template, input_variables=["context", "question"])
 
+def main():
+    device = verify_cuda()
+    list_pdf_files(CFG.PDFs_path)
+    tokenizer, model, max_len = load_model_and_tokenizer(CFG.model_name)
+    llm = setup_pipeline(tokenizer, model, max_len)
+    cache_path = "cached_documents.pkl"
+    documents = load_or_create_documents(CFG.PDFs_path, cache_path)
+    texts = split_texts(documents)
+    vectordb = download_and_create_embeddings(texts)
+    if vectordb is None:
+        vectordb = load_embeddings()    
 
-    PROMPT = PromptTemplate(
-        template = prompt_template,
-        input_variables = ["context", "question"]
-    )
+    PROMPT = configure_prompt_template()
 
     retriever = vectordb.as_retriever(search_kwargs = {"k": CFG.k, "search_type" : "similarity"})
 

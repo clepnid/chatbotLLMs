@@ -7,6 +7,15 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:main.py||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\transformers\\modeling_utils.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\directory.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\pdf.py||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\usuario\\source\\chatbotLLMs\\requirement.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:requirement.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
     },
@@ -22,8 +31,47 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 3,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "modeling_utils.py",
+              "DocumentMoniker": "c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\transformers\\modeling_utils.py",
+              "RelativeDocumentMoniker": "..\\..\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\transformers\\modeling_utils.py",
+              "ToolTip": "c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\transformers\\modeling_utils.py",
+              "RelativeToolTip": "..\\..\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\transformers\\modeling_utils.py",
+              "ViewState": "AQIAAIUKAAAAAAAAAAAIwJoKAAAIAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2024-05-14T12:58:30.713Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "directory.py",
+              "DocumentMoniker": "c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\directory.py",
+              "RelativeDocumentMoniker": "..\\..\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\directory.py",
+              "ToolTip": "c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\directory.py",
+              "RelativeToolTip": "..\\..\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\directory.py",
+              "ViewState": "AQIAAF0AAAAAAAAAAAAswHIAAAAIAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2024-05-14T12:22:05.816Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "pdf.py",
+              "DocumentMoniker": "c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\pdf.py",
+              "RelativeDocumentMoniker": "..\\..\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\pdf.py",
+              "ToolTip": "c:\\Users\\usuario\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\pdf.py",
+              "RelativeToolTip": "..\\..\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\langchain_community\\document_loaders\\pdf.py",
+              "ViewState": "AQIAAJAAAAAAAAAAAAAiwKEAAAAGAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
+              "WhenOpened": "2024-05-14T12:07:32.332Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -32,14 +80,14 @@
               "RelativeDocumentMoniker": "main.py",
               "ToolTip": "C:\\Users\\usuario\\source\\chatbotLLMs\\main.py",
               "RelativeToolTip": "main.py",
-              "ViewState": "AQIAALkAAAAAAAAAAAAswMgAAAASAAAA",
+              "ViewState": "AQIAAEEBAAAAAAAAAAAAAGUBAAAZAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.002457|",
               "WhenOpened": "2024-05-14T10:33:46.576Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
               "Title": "requirement.txt",
               "DocumentMoniker": "C:\\Users\\usuario\\source\\chatbotLLMs\\requirement.txt",
               "RelativeDocumentMoniker": "requirement.txt",
@@ -47,12 +95,11 @@
               "RelativeToolTip": "requirement.txt",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAkAAAAQAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2024-05-14T10:33:10.658Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-05-14T10:33:10.658Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 5,
               "Title": "README.md",
               "DocumentMoniker": "C:\\Users\\usuario\\source\\chatbotLLMs\\README.md",
               "RelativeDocumentMoniker": "README.md",
@@ -60,8 +107,7 @@
               "RelativeToolTip": "README.md",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAkAAAAeAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2024-05-14T10:33:03.716Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-05-14T10:33:03.716Z"
             }
           ]
         }
