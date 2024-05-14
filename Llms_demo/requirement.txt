@@ -1,0 +1,9 @@
+IPython==7.31.1
+sentence-transformers==2.2.2
+langchain
+tiktoken
+pypdf
+InstructorEmbedding
+transformers
+bitsandbytes
+accelerate
