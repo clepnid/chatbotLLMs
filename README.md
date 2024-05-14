@@ -7,7 +7,7 @@ Sigue estos pasos para configurar y ejecutar el proyecto:
 2. Instala las dependencias del proyecto ejecutando el siguiente comando en tu terminal:
 
     ```bash
-    pip install -r requirements.txt
+    pip install -r requirement.txt
     ```
 
 3. Una vez que hayas instalado las dependencias, puedes ejecutar el script principal utilizando el siguiente comando:

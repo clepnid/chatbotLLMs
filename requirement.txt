@@ -7,3 +7,4 @@ InstructorEmbedding
 transformers
 bitsandbytes
 accelerate
+faiss-cpu==1.7.4

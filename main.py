@@ -52,9 +52,12 @@ class CFG:
     k = 6
     
     # paths
-    PDFs_path = './harry_potter/'
-    Embeddings_path =  '/kaggle/input/faiss-hp-sentence-transformers'
-    Output_folder = './harry-potter-vectordb'
+    PDFs_path = '.\\books\\'
+    Embeddings_path =  '.\\input\\faiss-hp-sentence-transformers'
+    Output_folder = '.\\books-vectordb'
+    Output_folder_faiss = '.\\books-vectordb\\faiss_index_hp'
+
+    
 
 def get_model(model = CFG.model_name):
 
@@ -117,7 +120,7 @@ def get_model(model = CFG.model_name):
         model = AutoModelForCausalLM.from_pretrained(
             model_repo,
             quantization_config = bnb_config,       
-            device_map = 'auto',
+            device_map = 'cuda',
             low_cpu_mem_usage = True,
             trust_remote_code = True
         )
@@ -150,10 +153,52 @@ def get_model(model = CFG.model_name):
 
     return tokenizer, model, max_len
 
+
+def wrap_text_preserve_newlines(text, width=700):
+    # Split the input text into lines based on newline characters
+    lines = text.split('\n')
+
+    # Wrap each line individually
+    wrapped_lines = [textwrap.fill(line, width=width) for line in lines]
+
+    # Join the wrapped lines back together using newline characters
+    wrapped_text = '\n'.join(wrapped_lines)
+
+    return wrapped_text
+
+
+def process_llm_response(llm_response):
+    ans = wrap_text_preserve_newlines(llm_response['result'])
+
+    sources_used = ' \n'.join(
+        [
+            source.metadata['source'].split('/')[-1][:-4]
+            + ' - page: '
+            + str(source.metadata['page'])
+            for source in llm_response['source_documents']
+        ]
+    )
+
+    ans = ans + '\n\nSources: \n' + sources_used
+    return ans
+
+def llm_ans(query, qa_chain):
+    start = time.time()
+
+    llm_response = qa_chain.invoke(query)
+    ans = process_llm_response(llm_response)
+
+    end = time.time()
+
+    time_elapsed = int(round(end - start, 0))
+    time_elapsed_str = f'\n\nTime elapsed: {time_elapsed} s'
+    return ans + time_elapsed_str
+
+
 def main():
     pdf_files = sorted(glob.glob(CFG.PDFs_path))
 
-    print('List of Harry Potter books in PDF:')
+    print('List of books in PDF:')
     for pdf_file in pdf_files:
         print(os.path.basename(pdf_file))
 
@@ -165,6 +210,122 @@ def main():
     model.save_pretrained(output_folder)
 
     print('Model downloaded and saved to:', output_folder)
+    
+    model.eval()
+
+    model.hf_device_map
+
+    pipe = pipeline(
+    task = "text-generation",
+    model = model,
+    tokenizer = tokenizer,
+    pad_token_id = tokenizer.eos_token_id,
+    #        do_sample = True,
+    max_length = max_len,
+    temperature = CFG.temperature,
+    top_p = CFG.top_p,
+    repetition_penalty = CFG.repetition_penalty
+    )
+
+    ### langchain pipeline
+    llm = HuggingFacePipeline(pipeline = pipe)
+    llm
+    query = "Give me 5 examples of shards"
+    llm.invoke(query)
+    CFG.model_name
+    
+
+    loader = DirectoryLoader(
+    CFG.PDFs_path,
+    glob="./*.pdf",
+    loader_cls=PyPDFLoader,
+    show_progress=True,
+    use_multithreading=True
+    )
+    documents = loader.load()
+    
+
+    text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size = CFG.split_chunk_size,
+    chunk_overlap = CFG.split_overlap
+    )
+
+    texts = text_splitter.split_documents(documents)
+
+    print(f'We have created {len(texts)} chunks from {len(documents)} pages')
+
+    ### we create the embeddings only if they do not exist yet
+    if not os.path.exists(CFG.Output_folder_faiss + '\\index.faiss'):
+
+        ### download embeddings model
+        embeddings = HuggingFaceInstructEmbeddings(
+            model_name = CFG.embeddings_model_repo,
+            model_kwargs = {"device": "cuda"}
+        )
+        
+
+        ### create embeddings and DB
+        vectordb = FAISS.from_documents(
+            documents = texts,
+            embedding = embeddings
+        )
+
+        ### persist vector database
+        vectordb.save_local(CFG.Output_folder_faiss) # save in output folder
+        #     vectordb.save_local(f"{CFG.Embeddings_path}/faiss_index_hp") # save in input folder
+        
+    ### download embeddings model
+    embeddings = HuggingFaceInstructEmbeddings(
+        model_name = CFG.embeddings_model_repo,
+        model_kwargs = {"device": "cuda"}
+    )
+        
+
+    ### load vector DB embeddings
+    vectordb = FAISS.load_local(
+        #CFG.Embeddings_path, # from input folder
+            CFG.Output_folder_faiss, # from output folder
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+
+    vectordb.similarity_search('magic creatures')
+
+    prompt_template = """
+    Don't try to make up an answer, if you don't know just say that you don't know.
+    Answer in the same language the question was asked.
+    Use only the following pieces of context to answer the question at the end.
+
+    {context}
+
+    Question: {question}
+    Answer:"""
+
+
+    PROMPT = PromptTemplate(
+        template = prompt_template,
+        input_variables = ["context", "question"]
+    )
+
+    retriever = vectordb.as_retriever(search_kwargs = {"k": CFG.k, "search_type" : "similarity"})
+
+    qa_chain = RetrievalQA.from_chain_type(
+        llm = llm,
+        chain_type = "stuff", # map_reduce, map_rerank, stuff, refine
+        retriever = retriever,
+        chain_type_kwargs = {"prompt": PROMPT},
+        return_source_documents = True,
+        verbose = False
+    )
+
+    question = "When Kaladin meet Adolin?"
+    vectordb.max_marginal_relevance_search(question, k = CFG.k)
+
+    question = "When Adolin meet Kaladin"
+    vectordb.similarity_search(question, k = CFG.k)
+
+    query = "When Kaladin meet Syl?"
+    print(llm_ans(query, qa_chain))
 
 if __name__ == "__main__":
     main()
